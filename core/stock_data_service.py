@@ -11,6 +11,7 @@ import os
 from tqdm import tqdm
 from tools.baostock_crawler import get_stock_data
 import baostock as bs
+import numpy as np
 
 
 def trading_days(start_day: str, end_day: str):
@@ -150,7 +151,12 @@ def update_stock_data_from_csv(
         function_local_session.execute(upsert_stmt)
         function_local_session.commit()
         function_local_session.close_all()
-
+        
+def _clean_value(value, default=0):
+    """将空字符串转为 None，或指定默认值"""
+    if value == '' or value is None:
+        return default  # 可设为 None 或 0，根据字段语义决定
+    return value
 
 def update_stock_data_daily_by_baostock_api():
     lg = bs.login()
@@ -180,7 +186,7 @@ def update_stock_data_daily_by_baostock_api():
                 while (rs.error_code == "0") & rs.next():
                     data_list.append(rs.get_row_data())
                 result = pd.DataFrame(data_list, columns=rs.fields)
-
+                result = result.replace('', np.nan)
                 result.fillna(0, inplace=True)
                 print(stock_code_map.code, stock_code_map.code_name)
                 stock_datas_list = []
