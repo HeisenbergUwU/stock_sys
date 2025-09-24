@@ -172,6 +172,7 @@ def update_stock_data_daily_by_baostock_api():
                 is_store=False,
             )
             r.fillna(0, inplace=True)
+            print(stock_code_map.code, stock_code_map.code_name)
             stock_datas_list = []
             for idx, data in r.iterrows():
                 stock_data = {
