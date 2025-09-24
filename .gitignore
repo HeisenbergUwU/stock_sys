@@ -80,3 +80,8 @@ tmp/
 **/*.csv
 
 *.out
+*.png
+*.jpg
+*.zip
+*.tar
+*.tar.gz
