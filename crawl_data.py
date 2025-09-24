@@ -55,7 +55,3 @@ def download_all_stock_data_today():
     get_batch_stock_data(
         stockList, str(border_start), str(border_end), str(today), True
     )
-
-
-# get_year_trade_day()
-download_all_stock_data_today()
