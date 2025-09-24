@@ -78,3 +78,5 @@ tmp/
 *.csv
 */*.csv
 **/*.csv
+
+*.out
