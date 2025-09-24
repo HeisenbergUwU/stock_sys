@@ -6,7 +6,7 @@ import os
 
 load_dotenv()
 
-__all__ = ["session"]
+__all__ = ["session", "engine"]
 
 db_user = os.getenv("DB_USER", "root")
 db_password = os.getenv("DB_PASSWORD", "123456")
