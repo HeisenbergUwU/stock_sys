@@ -84,7 +84,7 @@ def predict_stock(code, code_name, predict_step: int, result_path: str = "result
     pred_df.reset_index(drop=True, inplace=True)
     if not os.path.exists(result_path):
         os.mkdir(result_path)
-    plot_prediction(all_df, pred_df, save_path=f"./result_path/{code}_{code_name}.png")
-    all_df.to_csv(f"./result_path/{code}_{code_name}_all.csv")
-    pred_df.to_csv(f"./result_path/{code}_{code_name}_pred.csv")
+    plot_prediction(all_df, pred_df, save_path=f"./{result_path}/{code}_{code_name}.png")
+    all_df.to_csv(f"./{result_path}/{code}_{code_name}_all.csv")
+    pred_df.to_csv(f"./{result_path}/{code}_{code_name}_pred.csv")
     return all_df, pred_df
