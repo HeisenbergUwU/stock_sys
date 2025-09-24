@@ -16,7 +16,7 @@ if not os.path.exists(f"{good_result}"):
 for path in pred_csv_paths:
     data = pd.read_csv(path)
     close = data["close"]
-    r = is_bloom_ascent(close)
+    r = is_bloom_ascent(close[:90])
     if r:
         # 正则表达式提取股票代码和名称
         match = re.search(r".?([a-z]{2}\.\d{6})_(.*?)_pred\.csv", path)
