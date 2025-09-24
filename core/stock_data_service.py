@@ -165,7 +165,6 @@ def update_stock_data_daily_by_baostock_api():
                     .first()
                 )
                 start_time = sd.date.strftime("%Y-%m-%d")
-                lg = bs.login()
                 rs = bs.query_history_k_data_plus(
                     stock_code_map.code,
                     "date,code,open,high,low,close,preclose,volume,amount,adjustflag,turn,tradestatus,pctChg,peTTM,pbMRQ,psTTM,pcfNcfTTM,isST",
