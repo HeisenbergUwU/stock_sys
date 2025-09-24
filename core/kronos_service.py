@@ -6,6 +6,7 @@ from sql.session import session, engine
 import pandas as pd
 from sql.models import *
 from datetime import datetime, date, timedelta
+import os
 
 tokenizer = KronosTokenizer.from_pretrained(TOKENIZER_PATH)
 model = Kronos.from_pretrained(MODEL_PATH)
@@ -13,7 +14,7 @@ model = Kronos.from_pretrained(MODEL_PATH)
 predictor = KronosPredictor(model, tokenizer, device=DEVICE, max_context=CONTEXT_LEN)
 
 
-def plot_prediction(kline_df, pred_df):
+def plot_prediction(kline_df, pred_df, save_path):
     pred_df.index = kline_df.index[-pred_df.shape[0] :]
     sr_close = kline_df["close"]
     sr_pred_close = pred_df["close"]
@@ -47,10 +48,12 @@ def plot_prediction(kline_df, pred_df):
     ax2.grid(True)
 
     plt.tight_layout()
-    plt.show()
+    plt.savefig(save_path, dpi=150, bbox_inches="tight")
+    print(f"✅ 图片已保存至: {save_path}")
+    plt.close(fig)
 
 
-def predict_stock(code, code_name, predict_step: int):
+def predict_stock(code, code_name, predict_step: int, result_path: str = "result"):
     assert predict_step <= 180
     r = read_pd_from_db(code)
     recent_day = r.tail()["date"].iloc[-1]
@@ -77,4 +80,11 @@ def predict_stock(code, code_name, predict_step: int):
     )
     print("Forecasted Data Head:")
     print(pred_df.head())
-    return pred_df
+    all_df = pd.concat([selected_data, pred_df], axis=0, ignore_index=True)
+    pred_df.reset_index(drop=True, inplace=True)
+    if not os.path.exists(result_path):
+        os.mkdir(result_path)
+    plot_prediction(all_df, pred_df, save_path=f"./{result_path}/{code}_{code_name}.png")
+    all_df.to_csv(f"./{result_path}/{code}_{code_name}_all.csv")
+    pred_df.to_csv(f"./{result_path}/{code}_{code_name}_pred.csv")
+    return all_df, pred_df
