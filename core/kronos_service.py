@@ -5,7 +5,7 @@ from matplotlib import pyplot as plt
 from sql.session import session, engine
 import pandas as pd
 from sql.models import *
-from datetime import datetime, date, timedelte
+from datetime import datetime, date, timedelta
 import os
 
 tokenizer = KronosTokenizer.from_pretrained(TOKENIZER_PATH)
