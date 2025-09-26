@@ -151,12 +151,14 @@ def update_stock_data_from_csv(
         function_local_session.execute(upsert_stmt)
         function_local_session.commit()
         function_local_session.close_all()
-        
+
+
 def _clean_value(value, default=0):
     """将空字符串转为 None，或指定默认值"""
-    if value == '' or value is None:
+    if value == "" or value is None:
         return default  # 可设为 None 或 0，根据字段语义决定
     return value
+
 
 def update_stock_data_daily_by_baostock_api():
     lg = bs.login()
@@ -170,7 +172,10 @@ def update_stock_data_daily_by_baostock_api():
                     .order_by(StockData.date.desc())
                     .first()
                 )
-                start_time = sd.date.strftime("%Y-%m-%d")
+                if sd:
+                    start_time = sd.date.strftime("%Y-%m-%d")
+                else:
+                    start_time = "2020-01-01"
                 rs = bs.query_history_k_data_plus(
                     stock_code_map.code,
                     "date,code,open,high,low,close,preclose,volume,amount,adjustflag,turn,tradestatus,pctChg,peTTM,pbMRQ,psTTM,pcfNcfTTM,isST",
@@ -186,7 +191,9 @@ def update_stock_data_daily_by_baostock_api():
                 while (rs.error_code == "0") & rs.next():
                     data_list.append(rs.get_row_data())
                 result = pd.DataFrame(data_list, columns=rs.fields)
-                result = result.replace('', np.nan)
+                result["date"] = pd.to_datetime(result["date"])
+                result["date"] = result["date"].fillna(method="ffill")
+                result = result.replace("", np.nan)
                 result.fillna(0, inplace=True)
                 print(stock_code_map.code, stock_code_map.code_name)
                 stock_datas_list = []
@@ -213,6 +220,92 @@ def update_stock_data_daily_by_baostock_api():
                     }
                     stock_datas_list.append(stock_data)
                 stmt = insert(StockData).values(stock_datas_list)
+                upsert_stmt = stmt.on_duplicate_key_update(
+                    date=stmt.inserted.date,
+                    open=stmt.inserted.open,
+                    high=stmt.inserted.high,
+                    low=stmt.inserted.low,
+                    close=stmt.inserted.close,
+                    preclose=stmt.inserted.preclose,
+                    volume=stmt.inserted.volume,
+                    amount=stmt.inserted.amount,
+                    adjustflag=stmt.inserted.adjustflag,
+                    turn=stmt.inserted.turn,
+                    tradestatus=stmt.inserted.tradestatus,
+                    pctChg=stmt.inserted.pctChg,
+                    peTTM=stmt.inserted.peTTM,
+                    pbMRQ=stmt.inserted.pbMRQ,
+                    psTTM=stmt.inserted.psTTM,
+                    pcfNcfTTM=stmt.inserted.pcfNcfTTM,
+                    isST=stmt.inserted.isST,
+                )
+                db.execute(upsert_stmt)
+                db.commit()
+                time.sleep(0.5)
+    finally:
+        bs.logout()
+
+
+def update_stock_data_week_by_baostock_api():
+    lg = bs.login()
+    try:
+        with session() as db:
+            stock_code_maps = db.query(StockCodeMap).all()
+            for stock_code_map in tqdm(stock_code_maps):
+                sd = (
+                    db.query(StockDataWeek)
+                    .filter(StockDataWeek.code == stock_code_map.code)
+                    .order_by(StockDataWeek.date.desc())
+                    .first()
+                )
+                if sd:
+                    start_time = sd.date.strftime("%Y-%m-%d")
+                else:
+                    start_time = "2020-01-01"
+                rs = bs.query_history_k_data_plus(
+                    stock_code_map.code,
+                    "date,code,open,high,low,close,preclose,volume,amount,adjustflag,turn,tradestatus,pctChg,peTTM,pbMRQ,psTTM,pcfNcfTTM,isST",
+                    start_date=start_time,
+                    end_date=str(date.today()),
+                    frequency="w",
+                    adjustflag="3",
+                )
+                data_list = []
+                if not rs:
+                    print(f"Error in get_stock_data: {rs.error_msg}")
+                    return pd.DataFrame()
+                while (rs.error_code == "0") & rs.next():
+                    data_list.append(rs.get_row_data())
+                result = pd.DataFrame(data_list, columns=rs.fields)
+                result["date"] = pd.to_datetime(result["date"])
+                result["date"] = result["date"].fillna(method="ffill")
+                result = result.replace("", np.nan)
+                result.fillna(0, inplace=True)
+                print(stock_code_map.code, stock_code_map.code_name)
+                stock_datas_list = []
+                for idx, data in result.iterrows():
+                    stock_data = {
+                        "date": data["date"],
+                        "code": data["code"],
+                        "open": data["open"],
+                        "high": data["high"],
+                        "low": data["low"],
+                        "close": data["close"],
+                        "preclose": data["preclose"],
+                        "volume": data["volume"],
+                        "amount": data["amount"],
+                        "adjustflag": data["adjustflag"],
+                        "turn": data["turn"],
+                        "tradestatus": data["tradestatus"],
+                        "pctChg": data["pctChg"],
+                        "peTTM": data["peTTM"],
+                        "pbMRQ": data["pbMRQ"],
+                        "psTTM": data["psTTM"],
+                        "pcfNcfTTM": data["pcfNcfTTM"],
+                        "isST": data["isST"],
+                    }
+                    stock_datas_list.append(stock_data)
+                stmt = insert(StockDataWeek).values(stock_datas_list)
                 upsert_stmt = stmt.on_duplicate_key_update(
                     date=stmt.inserted.date,
                     open=stmt.inserted.open,
