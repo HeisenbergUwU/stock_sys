@@ -5,7 +5,7 @@ from core.stock_data_service import get_stock_code
 from tools.AllMix import sanitize_filename
 from datetime import date
 
-STEP = 60
+STEP = 66
 STEP_WEEKLY = 24
 STEP_MONTHLY = 12
 PATH_1 = date.today().strftime("%Y-%m-%d")

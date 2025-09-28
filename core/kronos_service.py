@@ -15,6 +15,7 @@ tokenizer = KronosTokenizer.from_pretrained(TOKENIZER_PATH)
 model = Kronos.from_pretrained(MODEL_PATH)
 
 predictor = KronosPredictor(model, tokenizer, device=DEVICE, max_context=CONTEXT_LEN)
+PLOT_SKIP = 350
 
 
 def plot_prediction(kline_df, pred_df, save_path):
@@ -93,11 +94,10 @@ def predict_stock(
     pred_df.reset_index(drop=True, inplace=True)
     if not os.path.exists(result_path):
         os.mkdir(result_path)
+    all_df = all_df[PLOT_SKIP:]
     plot_prediction(
         all_df, pred_df, save_path=f"./{result_path}/{code}_{code_name}.png"
     )
-    # all_df.to_csv(f"./{result_path}/{code}_{code_name}_all.csv")
-    # pred_df.to_csv(f"./{result_path}/{code}_{code_name}_pred.csv")
     return all_df, pred_df
 
 
@@ -114,6 +114,18 @@ def predict_batch_stock(
     yts = []
     for code in codes:
         r = read_pd_from_db(code, frequency)
+        r = r[["open", "high", "low", "close", "volume", "amount", "date"]]
+        # 历史数据不足时做 padding
+        if len(r) < CONTEXT_LEN:
+            pad_len = CONTEXT_LEN - len(r)
+            pad_df = pd.DataFrame(
+                [[0] * 6] * pad_len,
+                columns=["open", "high", "low", "close", "volume", "amount"],
+            )
+            pad_df["date"] = pd.date_range(
+                end=r["date"].iloc[0] - timedelta(days=1), periods=pad_len
+            )
+            r = pd.concat([pad_df, r], ignore_index=True)
         recent_day = r.tail()["date"].iloc[-1]
         start_day = recent_day + timedelta(days=1)
         end_day = start_day + timedelta(days=800)
@@ -138,15 +150,14 @@ def predict_batch_stock(
         top_p=0.9,  # Nucleus sampling probability
         sample_count=1,  # Number of forecast paths to generate and average
     )
-    for selected_data, pred_df, code, code_name in zip(
-        dfs, pred_dfs, codes, code_names
+    for selected_data, pred_df, code, code_name, x_timestamp, y_timestamp in zip(
+        dfs, pred_dfs, codes, code_names, xts, yts
     ):
-        print("Forecasted Data Head:")
-        print(pred_df.head())
-        all_df = pd.concat([selected_data, pred_df], axis=0, ignore_index=True)
-        pred_df.reset_index(drop=True, inplace=True)
+        selected_data.index = x_timestamp
+        all_df = pd.concat([selected_data, pred_df], axis=0)
         if not os.path.exists(result_path):
             os.mkdir(result_path)
+        all_df = all_df[PLOT_SKIP:]
         plot_prediction(
             all_df, pred_df, save_path=f"./{result_path}/{code}_{code_name}.png"
         )
