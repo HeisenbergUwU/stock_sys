@@ -6,6 +6,8 @@ from tools.AllMix import sanitize_filename
 from datetime import date
 
 STEP = 60
+STEP_WEEKLY = 24
+STEP_MONTHLY = 12
 PATH_1 = date.today().strftime("%Y-%m-%d")
 all_stock_code = get_stock_code()
 
@@ -39,7 +41,7 @@ def weekly_predict():
             f"./{result_path}/{stock_code.code}_{stock_code.code_name}.png"
         ):
             all_df, pred_df = predict_stock(
-                stock_code.code, stock_code.code_name, STEP, result_path, "w"
+                stock_code.code, stock_code.code_name, STEP_WEEKLY, result_path, "w"
             )
             pred_df.to_csv(
                 result_path + f"/{stock_code.code}_{stock_code.code_name}_pred.csv"
@@ -57,7 +59,7 @@ def monthly_predict():
             f"./{result_path}/{stock_code.code}_{stock_code.code_name}.png"
         ):
             all_df, pred_df = predict_stock(
-                stock_code.code, stock_code.code_name, STEP, result_path, "m"
+                stock_code.code, stock_code.code_name, STEP_MONTHLY, result_path, "m"
             )
             pred_df.to_csv(
                 result_path + f"/{stock_code.code}_{stock_code.code_name}_pred.csv"
@@ -102,7 +104,7 @@ def weekly_predict_batch(batch_size: int = 16):
                 codes.append(stock_code.code)
                 codes_names.append(sanitize_filename(stock_code.code_name))
             predict_batch_stock(
-                STEP, result_path, "w", codes=codes, code_names=codes_names
+                STEP_WEEKLY, result_path, "w", codes=codes, code_names=codes_names
             )
             step += 1
         else:
@@ -124,7 +126,7 @@ def monthly_predict_batch(batch_size: int = 16):
                 codes.append(stock_code.code)
                 codes_names.append(sanitize_filename(stock_code.code_name))
             predict_batch_stock(
-                STEP, result_path, "m", codes=codes, code_names=codes_names
+                STEP_MONTHLY, result_path, "m", codes=codes, code_names=codes_names
             )
             step += 1
         else:
