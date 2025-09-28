@@ -61,7 +61,7 @@ def is_exponent_by_id(code: str) -> bool:
 
 
 def update_stock_code(is_store=True):
-    from crawl_data import get_a_stock_code
+    from scripts.crawl_data import get_a_stock_code
     import os
     from datetime import datetime, timedelta
 

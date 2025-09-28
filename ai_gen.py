@@ -82,6 +82,7 @@ def daily_predict_batch(batch_size: int = 16):
             predict_batch_stock(
                 STEP, result_path, "d", codes=codes, code_names=codes_names
             )
+            step += 1
         else:
             break
 
@@ -103,6 +104,7 @@ def weekly_predict_batch(batch_size: int = 16):
             predict_batch_stock(
                 STEP, result_path, "w", codes=codes, code_names=codes_names
             )
+            step += 1
         else:
             break
 
@@ -124,5 +126,6 @@ def monthly_predict_batch(batch_size: int = 16):
             predict_batch_stock(
                 STEP, result_path, "m", codes=codes, code_names=codes_names
             )
+            step += 1
         else:
             break
