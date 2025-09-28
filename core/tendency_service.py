@@ -28,7 +28,7 @@ def rolling_trend(prices, window=22, step=5):
     return results
 
 
-def is_bloom_ascent(prices, window=22, step=5, how_long: int = 5):
+def is_bloom_ascent(prices, window=22, step=5, how_long: int = 1):
     results = rolling_trend(prices, window, step)
     count = 0
     for window, slope, r2 in results:

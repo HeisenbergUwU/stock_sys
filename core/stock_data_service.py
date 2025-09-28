@@ -410,39 +410,60 @@ def get_stock_code():
     return stock_code_maps
 
 
-def read_pd_from_db(stock_code: str):
-    """_summary_
-
-    Args:
-        stock_code (str): sh.000001
-
-    Returns:
-        _type_: _description_
-    """
-    query = f"""SELECT 
-        id,
-        date,
-        code,
-        open,
-        high,
-        low,
-        close,
-        preclose,
-        volume,
-        amount,
-        adjustflag,
-        turn,
-        tradestatus,
-        pctChg,
-        peTTM,
-        pbMRQ,
-        psTTM,
-        pcfNcfTTM,
-        isST
-    FROM stock_data
-    WHERE code = '{stock_code}'
-    ORDER BY date ASC;"""
-    df = pd.read_sql(query, engine)
-    # df["date"] = pd.to_datetime(df["date"], unit="unix")
-    df.reset_index(drop=True, inplace=True)
-    return df
+def read_pd_from_db(stock_code: str, frequency: str = "d"):
+    if frequency == "d":
+        query = f"""SELECT 
+            id,
+            date,
+            code,
+            open,
+            high,
+            low,
+            close,
+            volume,
+            amount
+        FROM stock_data
+        WHERE code = '{stock_code}'
+        ORDER BY date ASC;"""
+        df = pd.read_sql(query, engine)
+        # df["date"] = pd.to_datetime(df["date"], unit="unix")
+        df.reset_index(drop=True, inplace=True)
+        return df
+    elif frequency == "w":
+        query = f"""SELECT
+            id,
+            date,
+            code,
+            open,
+            high,
+            low,
+            close,
+            volume,
+            amount
+        FROM stock_data_weekly
+        WHERE code = '{stock_code}'
+        ORDER BY date ASC;"""
+        df = pd.read_sql(query, engine)
+        # df["date"] = pd.to_datetime(df["date"], unit="unix")
+        df.reset_index(drop=True, inplace=True)
+        return df
+    elif frequency == "m":
+        query = f"""SELECT
+            id,
+            date,
+            code,
+            open,
+            high,
+            low,
+            close,
+            volume,
+            amount
+        FROM stock_data_monthly
+        WHERE code = '{stock_code}'
+        ORDER BY date ASC;"""
+        df = pd.read_sql(query, engine)
+        # df["date"] = pd.to_datetime(df["date"], unit="unix")
+        df.reset_index(drop=True, inplace=True)
+        return df
+    else:
+        raise ValueError("frequency must be 'd' or 'w' or 'm'")

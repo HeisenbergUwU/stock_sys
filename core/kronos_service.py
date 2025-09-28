@@ -7,7 +7,10 @@ import pandas as pd
 from sql.models import *
 from datetime import datetime, date, timedelta
 import os
+from dotenv import load_dotenv
 
+load_dotenv()
+print(TOKENIZER_PATH)
 tokenizer = KronosTokenizer.from_pretrained(TOKENIZER_PATH)
 model = Kronos.from_pretrained(MODEL_PATH)
 
@@ -53,9 +56,15 @@ def plot_prediction(kline_df, pred_df, save_path):
     plt.close(fig)
 
 
-def predict_stock(code, code_name, predict_step: int, result_path: str = "result"):
+def predict_stock(
+    code,
+    code_name,
+    predict_step: int,
+    result_path: str = "result",
+    frequency: str = "d",
+):
     assert predict_step <= 180
-    r = read_pd_from_db(code)
+    r = read_pd_from_db(code, frequency)
     recent_day = r.tail()["date"].iloc[-1]
     start_day = recent_day + timedelta(days=1)
     end_day = start_day + timedelta(days=800)
@@ -84,7 +93,62 @@ def predict_stock(code, code_name, predict_step: int, result_path: str = "result
     pred_df.reset_index(drop=True, inplace=True)
     if not os.path.exists(result_path):
         os.mkdir(result_path)
-    plot_prediction(all_df, pred_df, save_path=f"./{result_path}/{code}_{code_name}.png")
-    all_df.to_csv(f"./{result_path}/{code}_{code_name}_all.csv")
-    pred_df.to_csv(f"./{result_path}/{code}_{code_name}_pred.csv")
+    plot_prediction(
+        all_df, pred_df, save_path=f"./{result_path}/{code}_{code_name}.png"
+    )
+    # all_df.to_csv(f"./{result_path}/{code}_{code_name}_all.csv")
+    # pred_df.to_csv(f"./{result_path}/{code}_{code_name}_pred.csv")
     return all_df, pred_df
+
+
+def predict_batch_stock(
+    predict_step: int,
+    result_path: str = "result",
+    frequency: str = "d",
+    codes: list = [],
+    code_names: list = [],
+):
+    assert predict_step <= 180
+    dfs = []
+    xts = []
+    yts = []
+    for code in codes:
+        r = read_pd_from_db(code, frequency)
+        recent_day = r.tail()["date"].iloc[-1]
+        start_day = recent_day + timedelta(days=1)
+        end_day = start_day + timedelta(days=800)
+        x_timestamp = r["date"].iloc[-CONTEXT_LEN:]
+        x_timestamp = pd.to_datetime(x_timestamp)
+        y_timestamp = trading_days(str(start_day), str(end_day))[:predict_step]
+        y_timestamp = pd.Series(y_timestamp)
+        selected_data = r[-CONTEXT_LEN:]
+        selected_data = selected_data[
+            ["open", "high", "low", "close", "volume", "amount"]
+        ].reset_index(drop=True)
+        dfs.append(selected_data)
+        xts.append(x_timestamp)
+        yts.append(y_timestamp)
+    # Generate predictions
+    pred_dfs = predictor.predict_batch(
+        df_list=dfs,
+        x_timestamp_list=xts,
+        y_timestamp_list=yts,
+        pred_len=predict_step,
+        T=1.0,  # Temperature for sampling
+        top_p=0.9,  # Nucleus sampling probability
+        sample_count=1,  # Number of forecast paths to generate and average
+    )
+    for selected_data, pred_df, code, code_name in zip(
+        dfs, pred_dfs, codes, code_names
+    ):
+        print("Forecasted Data Head:")
+        print(pred_df.head())
+        all_df = pd.concat([selected_data, pred_df], axis=0, ignore_index=True)
+        pred_df.reset_index(drop=True, inplace=True)
+        if not os.path.exists(result_path):
+            os.mkdir(result_path)
+        plot_prediction(
+            all_df, pred_df, save_path=f"./{result_path}/{code}_{code_name}.png"
+        )
+        all_df.to_csv(f"./{result_path}/{code}_{code_name}_all.csv")
+        pred_df.to_csv(f"./{result_path}/{code}_{code_name}_pred.csv")
