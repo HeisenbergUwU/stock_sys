@@ -79,11 +79,17 @@ def daily_predict_batch(batch_size: int = 16):
             for stock_code in all_stock_code[
                 step * batch_size : (step + 1) * batch_size
             ]:
+                stock_code.code_name = sanitize_filename(stock_code.code_name)
+                if os.path.exists(
+                    f"./{result_path}/{stock_code.code}_{stock_code.code_name}_pred.csv"
+                ):
+                    continue
                 codes.append(stock_code.code)
-                codes_names.append(sanitize_filename(stock_code.code_name))
-            predict_batch_stock(
-                STEP, result_path, "d", codes=codes, code_names=codes_names
-            )
+                codes_names.append(stock_code.code_name)
+            if codes:
+                predict_batch_stock(
+                    STEP, result_path, "d", codes=codes, code_names=codes_names
+                )
             step += 1
         else:
             break
@@ -101,11 +107,17 @@ def weekly_predict_batch(batch_size: int = 16):
             for stock_code in all_stock_code[
                 step * batch_size : (step + 1) * batch_size
             ]:
+                stock_code.code_name = sanitize_filename(stock_code.code_name)
+                if os.path.exists(
+                    f"./{result_path}/{stock_code.code}_{stock_code.code_name}_pred.csv"
+                ):
+                    continue
                 codes.append(stock_code.code)
-                codes_names.append(sanitize_filename(stock_code.code_name))
-            predict_batch_stock(
-                STEP_WEEKLY, result_path, "w", codes=codes, code_names=codes_names
-            )
+                codes_names.append(stock_code.code_name)
+            if codes:
+                predict_batch_stock(
+                    STEP, result_path, "w", codes=codes, code_names=codes_names
+                )
             step += 1
         else:
             break
@@ -123,11 +135,17 @@ def monthly_predict_batch(batch_size: int = 16):
             for stock_code in all_stock_code[
                 step * batch_size : (step + 1) * batch_size
             ]:
+                stock_code.code_name = sanitize_filename(stock_code.code_name)
+                if os.path.exists(
+                    f"./{result_path}/{stock_code.code}_{stock_code.code_name}_pred.csv"
+                ):
+                    continue
                 codes.append(stock_code.code)
-                codes_names.append(sanitize_filename(stock_code.code_name))
-            predict_batch_stock(
-                STEP_MONTHLY, result_path, "m", codes=codes, code_names=codes_names
-            )
+                codes_names.append(stock_code.code_name)
+            if codes:
+                predict_batch_stock(
+                    STEP, result_path, "m", codes=codes, code_names=codes_names
+                )
             step += 1
         else:
             break
