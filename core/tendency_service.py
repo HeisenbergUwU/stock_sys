@@ -28,11 +28,13 @@ def rolling_trend(prices, window=22, step=5):
     return results
 
 
-def is_bloom_ascent(prices, window=22, step=5, how_long: int = 1):
+def is_bloom_ascent(
+    prices, window=22, step=5, how_long: int = 1, r2_threshold: float = 0.7
+):
     results = rolling_trend(prices, window, step)
     count = 0
     for window, slope, r2 in results:
-        if slope > 0 and r2 > 0.7:
+        if slope > 0 and r2 >= r2_threshold:
             count += 1
         else:
             count = 0
