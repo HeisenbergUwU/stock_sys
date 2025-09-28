@@ -58,7 +58,6 @@ Desktop.ini
 
 # Logs
 *.log
-logs/
 
 # Environment
 .env

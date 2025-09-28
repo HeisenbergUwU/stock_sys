@@ -176,14 +176,17 @@ def update_stock_data_daily_by_baostock_api():
                     start_time = sd.date.strftime("%Y-%m-%d")
                 else:
                     start_time = "2020-01-01"
-                rs = bs.query_history_k_data_plus(
-                    stock_code_map.code,
-                    "date,code,open,high,low,close,preclose,volume,amount,adjustflag,turn,tradestatus,pctChg,peTTM,pbMRQ,psTTM,pcfNcfTTM,isST",
-                    start_date=start_time,
-                    end_date=str(date.today()),
-                    frequency="d",
-                    adjustflag="3",
-                )
+                if start_time != date.today().strftime("%Y-%m-%d"):
+                    rs = bs.query_history_k_data_plus(
+                        stock_code_map.code,
+                        "date,code,open,high,low,close,preclose,volume,amount,adjustflag,turn,tradestatus,pctChg,peTTM,pbMRQ,psTTM,pcfNcfTTM,isST",
+                        start_date=start_time,
+                        end_date=str(date.today()),
+                        frequency="d",
+                        adjustflag="3",
+                    )
+                else:
+                    continue
                 data_list = []
                 if not rs:
                     print(f"Error in get_stock_data: {rs.error_msg}")
@@ -192,7 +195,6 @@ def update_stock_data_daily_by_baostock_api():
                     data_list.append(rs.get_row_data())
                 result = pd.DataFrame(data_list, columns=rs.fields)
                 result["date"] = pd.to_datetime(result["date"])
-                result["date"] = result["date"].fillna(method="ffill")
                 result = result.replace("", np.nan)
                 result.fillna(0, inplace=True)
                 print(stock_code_map.code, stock_code_map.code_name)
@@ -246,25 +248,25 @@ def update_stock_data_daily_by_baostock_api():
         bs.logout()
 
 
-def update_stock_data_week_by_baostock_api():
+def update_stock_data_weekly_by_baostock_api():
     lg = bs.login()
     try:
         with session() as db:
             stock_code_maps = db.query(StockCodeMap).all()
             for stock_code_map in tqdm(stock_code_maps):
                 sd = (
-                    db.query(StockDataWeek)
-                    .filter(StockDataWeek.code == stock_code_map.code)
-                    .order_by(StockDataWeek.date.desc())
+                    db.query(StockDataWeekly)
+                    .filter(StockDataWeekly.code == stock_code_map.code)
+                    .order_by(StockDataWeekly.date.desc())
                     .first()
                 )
                 if sd:
                     start_time = sd.date.strftime("%Y-%m-%d")
                 else:
-                    start_time = "2020-01-01"
+                    start_time = "2015-01-01"
                 rs = bs.query_history_k_data_plus(
                     stock_code_map.code,
-                    "date,code,open,high,low,close,preclose,volume,amount,adjustflag,turn,tradestatus,pctChg,peTTM,pbMRQ,psTTM,pcfNcfTTM,isST",
+                    "date,code,open,high,low,close,volume,amount,adjustflag,turn,pctChg",
                     start_date=start_time,
                     end_date=str(date.today()),
                     frequency="w",
@@ -278,7 +280,77 @@ def update_stock_data_week_by_baostock_api():
                     data_list.append(rs.get_row_data())
                 result = pd.DataFrame(data_list, columns=rs.fields)
                 result["date"] = pd.to_datetime(result["date"])
-                result["date"] = result["date"].fillna(method="ffill")
+                result = result.replace("", np.nan)
+                result.fillna(0, inplace=True)
+                print(stock_code_map.code, stock_code_map.code_name)
+                stock_datas_list = []
+                for idx, data in result.iterrows():
+                    stock_data = {
+                        "date": data["date"],
+                        "code": data["code"],
+                        "open": data["open"],
+                        "high": data["high"],
+                        "low": data["low"],
+                        "close": data["close"],
+                        "volume": data["volume"],
+                        "amount": data["amount"],
+                        "adjustflag": data["adjustflag"],
+                        "turn": data["turn"],
+                        "pctChg": data["pctChg"],
+                    }
+                    stock_datas_list.append(stock_data)
+                stmt = insert(StockDataWeekly).values(stock_datas_list)
+                upsert_stmt = stmt.on_duplicate_key_update(
+                    date=stmt.inserted.date,
+                    open=stmt.inserted.open,
+                    high=stmt.inserted.high,
+                    low=stmt.inserted.low,
+                    close=stmt.inserted.close,
+                    volume=stmt.inserted.volume,
+                    amount=stmt.inserted.amount,
+                    adjustflag=stmt.inserted.adjustflag,
+                    turn=stmt.inserted.turn,
+                    pctChg=stmt.inserted.pctChg,
+                )
+                db.execute(upsert_stmt)
+                db.commit()
+                time.sleep(0.5)
+    finally:
+        bs.logout()
+
+
+def update_stock_data_monthly_by_baostock_api():
+    lg = bs.login()
+    try:
+        with session() as db:
+            stock_code_maps = db.query(StockCodeMap).all()
+            for stock_code_map in tqdm(stock_code_maps):
+                sd = (
+                    db.query(StockDataMonthly)
+                    .filter(StockDataMonthly.code == stock_code_map.code)
+                    .order_by(StockDataMonthly.date.desc())
+                    .first()
+                )
+                if sd:
+                    start_time = sd.date.strftime("%Y-%m-%d")
+                else:
+                    start_time = "2000-01-01"
+                rs = bs.query_history_k_data_plus(
+                    stock_code_map.code,
+                    "date,code,open,high,low,close,volume,amount,adjustflag,turn,pctChg",
+                    start_date=start_time,
+                    end_date=str(date.today()),
+                    frequency="w",
+                    adjustflag="3",
+                )
+                data_list = []
+                if not rs:
+                    print(f"Error in get_stock_data: {rs.error_msg}")
+                    return pd.DataFrame()
+                while (rs.error_code == "0") & rs.next():
+                    data_list.append(rs.get_row_data())
+                result = pd.DataFrame(data_list, columns=rs.fields)
+                result["date"] = pd.to_datetime(result["date"])
                 result = result.replace("", np.nan)
                 result.fillna(0, inplace=True)
                 print(stock_code_map.code, stock_code_map.code_name)
@@ -305,7 +377,7 @@ def update_stock_data_week_by_baostock_api():
                         "isST": data["isST"],
                     }
                     stock_datas_list.append(stock_data)
-                stmt = insert(StockDataWeek).values(stock_datas_list)
+                stmt = insert(StockDataMonthly).values(stock_datas_list)
                 upsert_stmt = stmt.on_duplicate_key_update(
                     date=stmt.inserted.date,
                     open=stmt.inserted.open,
