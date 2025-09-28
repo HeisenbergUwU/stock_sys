@@ -363,18 +363,11 @@ def update_stock_data_monthly_by_baostock_api():
                         "high": data["high"],
                         "low": data["low"],
                         "close": data["close"],
-                        "preclose": data["preclose"],
                         "volume": data["volume"],
                         "amount": data["amount"],
                         "adjustflag": data["adjustflag"],
                         "turn": data["turn"],
-                        "tradestatus": data["tradestatus"],
                         "pctChg": data["pctChg"],
-                        "peTTM": data["peTTM"],
-                        "pbMRQ": data["pbMRQ"],
-                        "psTTM": data["psTTM"],
-                        "pcfNcfTTM": data["pcfNcfTTM"],
-                        "isST": data["isST"],
                     }
                     stock_datas_list.append(stock_data)
                 stmt = insert(StockDataMonthly).values(stock_datas_list)
@@ -384,18 +377,11 @@ def update_stock_data_monthly_by_baostock_api():
                     high=stmt.inserted.high,
                     low=stmt.inserted.low,
                     close=stmt.inserted.close,
-                    preclose=stmt.inserted.preclose,
                     volume=stmt.inserted.volume,
                     amount=stmt.inserted.amount,
                     adjustflag=stmt.inserted.adjustflag,
                     turn=stmt.inserted.turn,
-                    tradestatus=stmt.inserted.tradestatus,
                     pctChg=stmt.inserted.pctChg,
-                    peTTM=stmt.inserted.peTTM,
-                    pbMRQ=stmt.inserted.pbMRQ,
-                    psTTM=stmt.inserted.psTTM,
-                    pcfNcfTTM=stmt.inserted.pcfNcfTTM,
-                    isST=stmt.inserted.isST,
                 )
                 db.execute(upsert_stmt)
                 db.commit()
