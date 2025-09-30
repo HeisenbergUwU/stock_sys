@@ -8,9 +8,9 @@ import os
 from datetime import date
 
 freq = "daily"
-custom_date = "2025-09-24"
-result_path = f"prediction_result/{date.today().strftime('%Y-%m-%d')}#{freq}"
-good_result = "goot_result"
+# result_path = f"prediction_result/{date.today().strftime('%Y-%m-%d')}#{freq}"
+result_path = f"prediction_result/2025-09-30#{freq}"
+good_result = f"{date.today().strftime("%Y-%m-%d")}#{freq}"
 pred_csv_paths = glob(f"./{result_path}/*_pred.csv")
 
 if not os.path.exists(f"{good_result}"):
@@ -20,7 +20,7 @@ if not os.path.exists(f"{good_result}"):
 for path in pred_csv_paths:
     data = pd.read_csv(path)
     close = data["close"]
-    r = is_bloom_ascent_v2(close, how_long=5, window=5, step=2)
+    r = is_bloom_ascent_v2(close[:30], how_long=5, window=5, step=2)
     if r:
         # 正则表达式提取股票代码和名称
         match = re.search(r".?([a-z]{2}\.\d{6})_(.*?)_pred\.csv", path)

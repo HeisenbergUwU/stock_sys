@@ -1,30 +1,25 @@
 import logo from "./logo.svg";
 import "./App.css";
 import mockData from "./mock/stock.json";
-import StockChart from "./components/StockChart";
+import Chart from "./components/Chart";
 import { useState, useEffect } from "react";
+import { getData } from "./mock/utils";
 
 function App() {
-  const [data, setData] = useState([]);
 
+  const [data, setData] = useState(null);
   useEffect(() => {
-    // 这里替换为你的数据获取逻辑，比如从 API 拿 JSON
-    fetch("/api/stock-data")
-      .then((res) => res.json())
-      .then((json) => {
-        // json 应该是类似 [{date: "2025-09-01", open: ..., high: ..., low: ..., close: ...}, ...]
-        setData(json);
-      });
-  }, []);
-
-  if (data.length === 0) {
+    getData().then((data) => {
+        console.log(data);
+        
+      setData(data);
+    });
+  }, []);  if (data == null) {
     return <div>Loading...</div>;
   }
-
   return (
-    <div>
-      <h1>Stock Chart 示例</h1>
-      <StockChart data={data} width={900} height={500} />
+    <div className="App">
+      <Chart data={data} type="svg" />
     </div>
   );
 }
